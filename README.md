@@ -14,6 +14,7 @@ The best performance of ant colony optimization (ACO) largely depends on the app
   
 ![Alt text](https://github.com/AiGaf1/Study-ACO-for-TSP/blob/master/Research/eil76.png)
   c) Problem Eil76
+  
   Fig. 1 Graphs of the dependence of the objective function with respect to α, β for berlin ”,“ eli51 ”and“ eli76 ”.
                                   (a - “berlin”, b - “eli51”, c - “eli76”).
   
