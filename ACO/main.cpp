@@ -2,7 +2,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <cstdlib>
 #include <cmath>
 #include <random>
 #include <map>
@@ -16,7 +15,7 @@ typedef struct Point {
 	double y;
 }Point;
 
-constexpr int MAX_POINT_NUM = 150;
+const int MAX_POINT_NUM = 150;
 
 void clearAllowed(bool* allowed, int cityNum)
 {
@@ -25,40 +24,40 @@ void clearAllowed(bool* allowed, int cityNum)
 	}
 }
 
-int calculateProbabilityAndSelect(const double Tau[][MAX_POINT_NUM], const double heuristicValue[][MAX_POINT_NUM],
-	bool allowed[], int currentCityIndex, int cityNum, double alpha, double beta, ::default_random_engine& randomEngine)
+int calcProbabAndSel(const double Tau[][MAX_POINT_NUM], const double heuristVal[][MAX_POINT_NUM],
+	bool allowed[], int currCityIndex, int cityNum, double alpha, double beta, default_random_engine& randEngine)
 {
-	::map<int, double> probability;
+	map <int, double> probab;
 
-	double denominatorSum = 0;
+	double denominSum = 0;
 	for (int s = 1; s <= cityNum; s++) {
 		if (allowed[s] == true) {
-			double val = pow(Tau[currentCityIndex][s], alpha) * pow(heuristicValue[currentCityIndex][s], beta);
-			probability.insert({ s,val });
-			denominatorSum += val;
+			double val = pow(Tau[currCityIndex][s], alpha) * pow(heuristVal[currCityIndex][s], beta);
+			probab.insert({ s,val });
+			denominSum += val;
 		}
 	}
 
 	int selectedCityIndex = -1;
-	if (probability.size() == 1) {
+	if (probab.size() == 1) {
 		//means we have no city for choosing
-		selectedCityIndex = probability.begin()->first;
+		selectedCityIndex = probab.begin()->first;
 	}
 	else {
 		double sumSelect = 0;
 
-		::uniform_real_distribution<double> randomDistribution(0, 1);
-		double generatedProbablity = randomDistribution(randomEngine);
+		uniform_real_distribution<double> randDistribut(0, 1);
+		double generatedProbab = randDistribut(randEngine);
 
-		for (auto& r : probability) {
-			r.second = r.second / denominatorSum;
+		for (auto& r : probab) {
+			r.second = r.second / denominSum;
 			sumSelect += r.second;
-			if (sumSelect >= generatedProbablity) {
+			if (sumSelect >= generatedProbab) {
 				selectedCityIndex = r.first;
 				break;
 			}
 		}
-		selectedCityIndex = selectedCityIndex == -1 ? (--probability.end())->first : selectedCityIndex;
+		selectedCityIndex = selectedCityIndex == -1 ? (--probab.end())->first : selectedCityIndex;
 	}
 
 	allowed[selectedCityIndex] = false;
@@ -75,29 +74,28 @@ void calculateDeltaTauPerAnt(double deltaTau[][MAX_POINT_NUM], int Q, ::vector<i
 	}
 }
 
-void constructPath(const double graphMatrix[][MAX_POINT_NUM], const double Tau[][MAX_POINT_NUM], const double heuristicValue[][MAX_POINT_NUM],
-	::vector<int>& path, double& currentDistance, int cityNum, double alpha, double beta, ::default_random_engine& randomEngine, ::uniform_int_distribution<int>& randomDistribution)
+void constructPath(const double graphMatrix[][MAX_POINT_NUM], const double Tau[][MAX_POINT_NUM], const double heuristVal[][MAX_POINT_NUM],
+	vector<int>& path, double& currDist, int cityNum, double alpha, double beta, default_random_engine& randEngine, uniform_int_distribution<int>& randDistribut)
 {
 	bool allowed[MAX_POINT_NUM];
-	//double currentDistance = 0;
 	clearAllowed(allowed, cityNum);
 
-	int startNum = randomDistribution(randomEngine);
+	int startNum = randDistribut(randEngine);
 	path.push_back(startNum);
 	allowed[startNum] = false;
 
 	int current = startNum;
 	while (path.size() < cityNum) {
-		int next = calculateProbabilityAndSelect(Tau, heuristicValue, allowed, current, cityNum, alpha, beta, randomEngine);
+		int next = calcProbabAndSel(Tau, heuristVal, allowed, current, cityNum, alpha, beta, randEngine);
 
 		//add it to path and update distance
 		path.push_back(next);
-		currentDistance += graphMatrix[current][next];
+		currDist += graphMatrix[current][next];
 
 		current = next;
 	}
 
-	currentDistance += graphMatrix[current][startNum];
+	currDist += graphMatrix[current][startNum];
 }
 
 void updateTau(double Tau[][MAX_POINT_NUM], double deltaTauTotal[][MAX_POINT_NUM], double rho, int cityNum)
@@ -110,16 +108,13 @@ void updateTau(double Tau[][MAX_POINT_NUM], double deltaTauTotal[][MAX_POINT_NUM
 	}
 }
 double start(double new_alpha, double new_beta) {
-	string filePath;
 
-	//cin >> filePath;
-
-	ifstream in("eil76.txt");
+	ifstream in("tsp/eil76.txt");
 	if (!in.is_open()) {
-		::cout << "No exist!" << ::endl;
+		cout << "No exist!" << ::endl;
 	}
 
-	::vector<Point> points;
+	vector<Point> points;
 	int index;
 	double x, y;
 	int cityNum = 0;
@@ -128,7 +123,7 @@ double start(double new_alpha, double new_beta) {
 	}
 
 	double graphMatrix[MAX_POINT_NUM][MAX_POINT_NUM];
-	double heuristicValue[MAX_POINT_NUM][MAX_POINT_NUM];
+	double heuristVal[MAX_POINT_NUM][MAX_POINT_NUM];
 
 	for (auto& p : points) {
 		cityNum++;
@@ -136,17 +131,17 @@ double start(double new_alpha, double new_beta) {
 			if (p.index != pr.index) {
 				double val = sqrt((p.x - pr.x) * (p.x - pr.x) + (p.y - pr.y) * (p.y - pr.y));
 				graphMatrix[p.index][pr.index] = graphMatrix[pr.index][p.index] = val;
-				heuristicValue[p.index][pr.index] = heuristicValue[pr.index][p.index] = 1 / val;
+				heuristVal[p.index][pr.index] = heuristVal[pr.index][p.index] = 1 / val;
 			}
 			else {
 				graphMatrix[p.index][pr.index] = graphMatrix[pr.index][p.index] = 0;
-				heuristicValue[p.index][pr.index] = heuristicValue[pr.index][p.index] = 0;
+				heuristVal[p.index][pr.index] = heuristVal[pr.index][p.index] = 0;
 			}
 		}
 	}
 
-	constexpr int antNum = 76;
-	constexpr int iterTimes = 300;
+	const int antNum = 76;
+	const int iterTimes = 300;
 	double alpha = new_alpha;
 	double beta = new_beta;
 	double rho = 0.3;
@@ -162,8 +157,8 @@ double start(double new_alpha, double new_beta) {
 		}
 	}
 
-	default_random_engine randomEngine;
-	uniform_int_distribution<int> randomDistribution(1, cityNum);
+	default_random_engine randEngine;
+	uniform_int_distribution<int> randDistribut(1, cityNum);
 
 	int iterCounter = 0;
 	while (iterCounter < iterTimes) {
@@ -176,15 +171,15 @@ double start(double new_alpha, double new_beta) {
 
 		for (int i = 0; i < antNum; i++) {
 						
-			::vector<int> path;
-			double currentDistance = 0;
-			constructPath(graphMatrix, Tau, heuristicValue, path, currentDistance, cityNum, alpha, beta, randomEngine, randomDistribution);
+			vector<int> path;
+			double currDist = 0;
+			constructPath(graphMatrix, Tau, heuristVal, path, currDist, cityNum, alpha, beta, randEngine, randDistribut);
 						
-			calculateDeltaTauPerAnt(deltaTauTotal, Q, path, currentDistance);
+			calculateDeltaTauPerAnt(deltaTauTotal, Q, path, currDist);
 			
-			if (currentDistance < bestLength) {
-				bestLength = currentDistance;
-				::copy(path.cbegin(), path.cend(), bestPath.begin());
+			if (currDist < bestLength) {
+				bestLength = currDist;
+				copy(path.cbegin(), path.cend(), bestPath.begin());
 			}
 		}
 		updateTau(Tau, deltaTauTotal, rho, cityNum);
